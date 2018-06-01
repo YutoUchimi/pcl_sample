@@ -57,15 +57,38 @@ int main(int argc, char** argv)
   if (pcl::io::loadOBJFile(file, *cloud) == -1 ||
       pcl::io::loadOBJFile(file, *mesh) == -1)
   {
-    if (pcl::io::loadPCDFile(file, *cloud) == -1 ||
-        pcl::io::loadOBJFile(file, *mesh) == -1)
+    if (pcl::io::loadPCDFile(file, *cloud) == -1)
       {
-        std::cerr << "[ERROR] Couldn't load OBJ or PCD file. Specified file name: " <<
+        std::cerr <<
+          "[ERROR] Couldn't load OBJ or PCD file. Specified file name: " <<
           file << std::endl << std::endl;
         exit(1);
       }
   }
   std::cout << "Finished loading: " << file << std::endl;
+  std::cout << "mesh->polygons.size(): " << mesh->polygons.size() << std::endl;
+  std::cout << "cloud->points.size(): " << cloud->points.size() << std::endl;
+
+  // Decimate point cloud
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_small(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  int decimate_thre = 10000;
+  int decimate_scale = 4;
+  if (cloud->points.size() < decimate_thre)
+    {
+      pcl::copyPointCloud(*cloud, *cloud_small);
+    }
+  else
+    {
+      for (size_t i = 0; i < cloud->points.size(); ++i)
+        {
+          if (i % decimate_scale == 0) {
+            cloud_small->push_back(cloud->points[i]);
+          }
+        }
+    }
+  std::cout << "cloud_small->points.size(): " << cloud_small->points.size() <<
+    std::endl;
 
   // Estimate normal
   pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
@@ -73,12 +96,10 @@ int main(int argc, char** argv)
       new pcl::search::KdTree<pcl::PointXYZ>);
   pcl::PointCloud<pcl::Normal>::Ptr normals(
       new pcl::PointCloud<pcl::Normal>);
-  tree1->setInputCloud(cloud);
-  ne.setInputCloud(cloud);
+  tree1->setInputCloud(cloud_small);
+  ne.setInputCloud(cloud_small);
   ne.setSearchMethod(tree1);
   ne.setKSearch(20);
-  std::cout << "mesh->polygons.size(): " << mesh->polygons.size() << std::endl;
-  std::cout << "cloud->points.size(): " << cloud->points.size()  << std::endl;
   std::cout << "Start estimating normal..." << std::endl;
   ne.compute(*normals);
   std::cout << "Finished estimating normal." << std::endl;
@@ -86,7 +107,7 @@ int main(int argc, char** argv)
   // Concatenate the XYZ and normal fields
   pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(
       new pcl::PointCloud<pcl::PointNormal>);
-  pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+  pcl::concatenateFields(*cloud_small, *normals, *cloud_with_normals);
 
   // Create search tree
   pcl::search::KdTree<pcl::PointNormal>::Ptr tree(
@@ -102,7 +123,7 @@ int main(int argc, char** argv)
   mc.setSearchMethod(tree);
   std::cout << "Start marching cubes reconstruction..." << std::endl;
   clock_t start = clock();
-  // mc.reconstruct(*triangles);
+  mc.reconstruct(*triangles);
   clock_t end = clock();
   std::cout << "Reconstruction finished!" << std::endl;
   std::cout << triangles->polygons.size() << " triangles created." <<
@@ -116,9 +137,9 @@ int main(int argc, char** argv)
   // View reconstructed mesh
   pcl::visualization::PCLVisualizer viewer("viewer");
   viewer.setBackgroundColor(0.2, 0.2, 0.2);
-  viewer.addPolygonMesh(*mesh, "mesh", 0);
+  // viewer.addPolygonMesh(*mesh, "mesh", 0);
   // viewer.addPointCloud<pcl::PointXYZ>(cloud, "cloud", 0);
-  // viewer.addPolygonMesh(*triangles, "triangles", 0);
+  viewer.addPolygonMesh(*triangles, "triangles", 0);
   viewer.addCoordinateSystem(0.1);
   viewer.initCameraParameters();
   viewer.setCameraPosition(
