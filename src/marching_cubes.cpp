@@ -1,11 +1,8 @@
 // CopyRight [2018] <Yuto Uchimi>
 
-#include <time.h>
-
-#include <iostream>
-#include <string>
-
 #include <boost/program_options.hpp>
+
+#include <time.h>
 
 #include <pcl/console/print.h>
 #include <pcl/io/obj_io.h>
@@ -15,6 +12,9 @@
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/surface/marching_cubes_rbf.h>
 #include <pcl/visualization/pcl_visualizer.h>
+
+#include <iostream>
+#include <string>
 
 int main(int argc, char** argv)
 {
