@@ -22,19 +22,21 @@ int main(int argc, char** argv)
 
   std::string file, output;
   float iso_level;
-  int grid_res;
+  int grid_res, decimate_thre;
 
   namespace po = boost::program_options;
   po::options_description desc("option");
   desc.add_options()
-    ("file,f", po::value<std::string>(&file)->default_value(
-      "./models/pet_bottle/model_normalized.obj"), "The loaded file name")
-    ("output,o", po::value<std::string>(&output)->default_value(
-      "./models/pet_bottle/reconstructed/model.obj"), "The output file name")
+    ("file,f", po::value<std::string>(&file)->required(),
+     "The loaded file name")
+    ("output,o", po::value<std::string>(&output)->required(),
+     "The output file name")
     ("iso_level,i", po::value<float>(&iso_level)->default_value(0.00f),
      "The ISO level")
     ("grid_res,g", po::value<int>(&grid_res)->default_value(100),
-     "The grid resolution");
+     "The grid resolution")
+    ("decimate_thre,d", po::value<int>(&decimate_thre)->default_value(5000),
+     "The decimate threshold");
 
   po::variables_map vm;
   try
@@ -72,9 +74,12 @@ int main(int argc, char** argv)
   // Decimate point cloud
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_small(
       new pcl::PointCloud<pcl::PointXYZ>);
-  int decimate_thre = 10000;
-  int decimate_scale = 4;
-  if (cloud->points.size() < decimate_thre)
+  int decimate_scale = 1;
+  while (cloud->points.size() / decimate_scale > decimate_thre)
+    {
+      decimate_scale++;
+    }
+  if (cloud->points.size() <= decimate_thre)
     {
       pcl::copyPointCloud(*cloud, *cloud_small);
     }
