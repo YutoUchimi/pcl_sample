@@ -6,6 +6,9 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+
 #include <opencv2/opencv.hpp>
 
 #include <pcl/console/print.h>
@@ -21,14 +24,10 @@ cv::Mat get_depth(std::string depth_png_file)
     {
       for (size_t i = 0; i < depth_raw.cols; ++i)
         {
-          // FIXME
-          // float tmp = static_cast<float>(depth_raw.at<unsigned short int>(j, i)) / 1000.0f;  // NOLINT
-          float tmp = static_cast<float>(depth_raw.at<unsigned short int>(j, i)) / 25000.0f;  // NOLINT
-          // FIXME
-          // if (tmp < 0.3 || tmp > 3.0)  // nan for too small or too large depth
-          if (tmp == 0.0 || tmp > 0.2)  // nan for too small or too large depth
+          float tmp = static_cast<float>(
+              depth_raw.at<unsigned short int>(j, i)) / 1000.0f;  // NOLINT
+          if (tmp < 0.3 || tmp > 1.5)  // Ignore too small or too large depth
             {
-              // depth.at<float>(j, i) = std::numeric_limits<float>::quiet_NaN();
               depth.at<float>(j, i) = 0.0;
             }
           else
@@ -66,7 +65,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr depth_to_color_pointcloud(
               direction_(1) *= d;
               direction_(2) = d;
               direction_ = cam_pose * direction_;
-              Eigen::Vector3f direction(direction_(0), direction_(1), direction_(2));
+              Eigen::Vector3f direction(
+                  direction_(0), direction_(1), direction_(2));
               pcl::PointXYZ pt(direction(0), direction(1), direction(2));
               cloud->width++;
               cloud->points.push_back(pt);
@@ -83,14 +83,33 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr depth_to_color_pointcloud(
 
 int main(int argc, char** argv)
 {
+  std::string depth_png_file;
+
+  namespace po = boost::program_options;
+  po::options_description desc("option");
+  desc.add_options()
+    ("file,f", po::value<std::string>(&depth_png_file)->required(),
+     "The converted file name");
+
+  po::variables_map vm;
+  try
+    {
+      po::store(po::parse_command_line(argc, argv, desc), vm);
+    }
+  catch(const po::error_with_option_name & e)
+    {
+      std::cout << "[ERROR] " << e.what() << std::endl;
+      exit(1);
+    }
+  po::notify(vm);
+
   pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
-  std::string depth_png_file = argv[1];
   cv::Mat depth = get_depth(depth_png_file);
 
   Eigen::Matrix3f cam_K;
   cam_K <<
-    525,   0, 320,
-      0, 525, 240,
+    518,   0, 311,
+      0, 518, 243,
       0,   0,   1;
   Eigen::Matrix4f cam_pose;
   cam_pose <<
@@ -102,7 +121,9 @@ int main(int argc, char** argv)
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr = depth_to_color_pointcloud(
       /*height=*/480, /*width=*/640, depth, cam_K, cam_pose);
 
-  pcl::io::savePCDFileBinary("cloud.pcd", *cloud_ptr);
+  boost::filesystem::path p(depth_png_file);
+  boost::filesystem::path pcd_path = p.parent_path() / "cloud.pcd";
+  pcl::io::savePCDFileBinary(pcd_path.string(), *cloud_ptr);
 
   return(0);
 }

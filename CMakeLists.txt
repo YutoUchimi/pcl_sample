@@ -47,7 +47,7 @@ target_link_libraries(../bin/marching_cubes_gpu
 
 add_executable(../bin/depth_to_cloud ../src/depth_to_cloud.cpp)
 target_link_libraries(../bin/depth_to_cloud
-  ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
+  ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(../bin/view_obj_or_pcd ../src/view_obj_or_pcd.cpp)
 target_link_libraries(../bin/view_obj_or_pcd
