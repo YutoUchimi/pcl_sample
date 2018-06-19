@@ -1,5 +1,6 @@
 // CopyRight [2018] <Yuto Uchimi>
 
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
 #include <time.h>
@@ -30,7 +31,7 @@ int main(int argc, char** argv)
     ("file,f", po::value<std::string>(&file)->required(),
      "The loaded file name")
     ("output,o", po::value<std::string>(&output)->required(),
-     "The output file name")
+     "The output OBJ file name")
     ("iso_level,i", po::value<float>(&iso_level)->default_value(0.00f),
      "The ISO level")
     ("grid_res,g", po::value<int>(&grid_res)->default_value(100),
@@ -137,6 +138,17 @@ int main(int argc, char** argv)
     std::endl << std::endl;
 
   // Save Mesh as OBJ format
+  namespace fs = boost::filesystem;
+  fs::path p(output);
+  if (! fs::is_directory(p.parent_path()))
+    {
+      boost::system::error_code error;
+      const bool result = fs::create_directories(p.parent_path(), error);
+      if (! result || error)
+        {
+        std::cerr << "[ERROR] Could not create directory." << std::endl;
+        }
+    }
   pcl::io::saveOBJFile(output, *triangles);
 
   // View reconstructed mesh
