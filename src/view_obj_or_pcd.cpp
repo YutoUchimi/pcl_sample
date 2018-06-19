@@ -59,7 +59,7 @@ int main(int argc, char** argv)
   viewer.addCoordinateSystem(0.1);
   viewer.initCameraParameters();
   viewer.setCameraPosition(
-      /*pos=*/0.0, 0.0, -0.4, /*view=*/0.0, 0.0, 0.0, /*up=*/0.0, 1.0, 0.0,
+      /*pos=*/0.0, 0.0, -0.8, /*view=*/0.0, 0.0, 0.0, /*up=*/0.0, -1.0, 0.0,
       /*viewport=*/0);
   while (!viewer.wasStopped())
   {
