@@ -18,8 +18,7 @@ int main(int argc, char** argv)
   namespace po = boost::program_options;
   po::options_description desc("option");
   desc.add_options()
-    ("file,f", po::value<std::string>(&file)->default_value(
-      "./models/pet_bottle/reconstrcted/i_0_g_10.obj"), "The loaded file name");
+    ("file,f", po::value<std::string>(&file)->required(), "The loaded file name");
 
   po::variables_map vm;
   try
@@ -42,8 +41,7 @@ int main(int argc, char** argv)
   if (pcl::io::loadOBJFile(file, *cloud) == -1 ||
       pcl::io::loadOBJFile(file, *mesh) == -1)
   {
-    if (pcl::io::loadPCDFile(file, *cloud) == -1 ||
-        pcl::io::loadOBJFile(file, *mesh) == -1)
+    if (pcl::io::loadPCDFile(file, *cloud) == -1)
       {
         std::cerr << "[ERROR] Couldn't load OBJ or PCD file. Specified file name: " <<
           file << std::endl << std::endl;
