@@ -13,12 +13,13 @@ int main(int argc, char** argv)
 {
   std::cout << std::endl;
 
-  std::string file;
+  std::string file, show;
 
   namespace po = boost::program_options;
   po::options_description desc("option");
   desc.add_options()
-    ("file,f", po::value<std::string>(&file)->required(), "The loaded file name");
+    ("file,f", po::value<std::string>(&file)->required(), "The loaded file name")
+    ("show,s", po::value<std::string>(&show)->required(), "The output format");
 
   po::variables_map vm;
   try
@@ -54,8 +55,18 @@ int main(int argc, char** argv)
   // View reconstructed mesh
   pcl::visualization::PCLVisualizer viewer("viewer");
   viewer.setBackgroundColor(0.2, 0.2, 0.2);
-  // viewer.addPolygonMesh(*mesh, "mesh", 0);
-  viewer.addPointCloud<pcl::PointXYZ>(cloud, "cloud", 0);
+  if (show == "mesh")
+    {
+      viewer.addPolygonMesh(*mesh, "mesh", 0);
+    }
+  else if (show == "cloud")
+    {
+      viewer.addPointCloud<pcl::PointXYZ>(cloud, "cloud", 0);
+    }
+  else
+    {
+      std::cerr << "[ERROR] Choose output format from {mesh, cloud}" << std::endl;
+    }
   viewer.addCoordinateSystem(0.1);
   viewer.initCameraParameters();
   viewer.setCameraPosition(
